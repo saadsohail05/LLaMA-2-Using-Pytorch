@@ -21,3 +21,41 @@ class ModelArgs:
     max_seq_len:int=2048
     device:str=None
 
+# Complete Model Except the Softmax
+class Transformer(nn.Module):
+    def __init__(self,args:ModelArgs)->None:
+        super().__init__()
+
+        assert args.vocab_size!=-1, "Vocab Size must be set"
+
+        self.args=args
+        self.vocab_size=args.vocab_size
+        self.n_layers=args.n_layers
+        self.tok_embeddings=nn.Embedding(self.vocab_size,args.dim)
+
+        self.layers=nn.ModuleList()
+        for _ in range(args.n_layers):
+            self.layers.append(EncoderBlock(args))
+        
+        self.normalization=RMSNorm(args.dim,eps=args.norm_eps)
+        self.output=nn.Linear(args.dim,self.vocab_size,bias=False)
+
+        self.freqs_complex=precompute_theta_pos_frequencies(self.args.dim//self.args.n_heads,self.args.max_seq_len*2,device=self.args.device)  # For Positional Encoding
+
+    def forward(self,tokens:torch.Tensor,start_pos:int):
+        # (Batch,Sequence Length)
+        batch_size,seq_len=tokens.shape
+        assert seq_len==1, "Sequence Length must be 1/Only 1 token at a time can be processed" 
+
+        # (Batch,Sequence Length,Embedding Dimension) Convert Tokens to Embeddings
+        h=self.tok_embeddings(tokens)
+
+        # Retrive the pairs (m,theta) coresponding to the position [Start_pos,start_pos+seq_len]
+        freqs_complex=self.freqs_complex[start_pos:start_pos+seq_len]
+
+        # Consecutively applying to all the encoder layers
+        for layer in self.layers:
+            h=layer(h,start_pos,freqs_complex)
+        h=self.norm(h)
+        output=self.output(h).float()
+        return output
