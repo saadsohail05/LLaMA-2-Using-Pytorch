@@ -51,7 +51,21 @@ def apply_rotary_embeddings(x:torch.Tensor,freqs_complex:torch.Tensor):
     x_out=x_out.reshape(*x.shape)
     return x_out
 
+class RMSNorm(nn.Module):
+    def __init__(self,dim:int,eps:float=1e-5):
+        super().__init__()
+        self.eps=eps
+        self.weight=nn.Parameter(torch.ones(dim))
+    def norm(self,x:torch.Tensor):
+        # rsqrt:1/sqrt(x)
+        return x*torch.rsqrt(x.pow(2).mean(-1,keepdim=True)+self.eps)
+    
+    def forward(self,x:torch.Tensor):
+        return self._norm(x.float()).type_as(x)*self.weight
 
+    
+   
+       
 # Complete Model Except the Softmax
 class Transformer(nn.Module):
     def __init__(self,args:ModelArgs)->None:
