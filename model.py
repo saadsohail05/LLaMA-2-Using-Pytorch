@@ -63,7 +63,27 @@ class RMSNorm(nn.Module):
     def forward(self,x:torch.Tensor):
         return self._norm(x.float()).type_as(x)*self.weight
 
+class EncoderBlock(nn.Module):
+    def __init__(self,args:ModelArgs):
+        super().__init__()
+        self.n_heads=args.n_heads
+        self.dim=args.dim
+        self.head_dim=args.dim//args.n_heads
+
+        self.attention=SelfAttention(args)
+        self.feed_forward=FeedForward(args)
+
+        # Normalization before self attention
+        self.attention_norm=RMSNorm(args.dim,eps=args.norm_eps)
+
+        # Normalization before feed forward
+        self.ffn_norm=RMSNorm(args.dim,eps=args.norm_eps)
     
+    def forward(self,x:torch.Tensor,start_pos:int,freqs_complex:torch.Tensor):
+      h=x+self.attention.feed_forward(self.attention_norm(x),start_pos,freqs_complex)
+      out=h+self.feed_forward.forward(self.ffn_norm(h))
+
+
    
        
 # Complete Model Except the Softmax
