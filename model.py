@@ -39,6 +39,19 @@ def precompute_theta_pos_frequencies(head_dim:int,seq_len=int,device=str,theta:f
     freqs_complex=torch.polar(torch.ones_like(freqs),freqs)
     return freqs_complex
 
+
+def apply_rotary_embeddings(x:torch.Tensor,freqs_complex:torch.Tensor):
+    # x: (Batch,Seq_Len,Head_Dim) -> (Batch,Seq_Len,Head_Dim/2,)
+    # Converting the input to the complex form
+    x_complex=torch.view_as_complex(x.float().reshape(*x.shape[:-1],-1,2))
+    # (Batch,Seq_Len,Head_Dim/2)->(1,1,Seq_Len,Head_Dim/2)
+    freqs_complex=freqs_complex.unsqueeze(0).unsqueeze(2)
+    x_rotated=x_complex*freqs_complex
+    x_out=torch.view_as_real(x_rotated)
+    x_out=x_out.reshape(*x.shape)
+    return x_out
+
+
 # Complete Model Except the Softmax
 class Transformer(nn.Module):
     def __init__(self,args:ModelArgs)->None:
