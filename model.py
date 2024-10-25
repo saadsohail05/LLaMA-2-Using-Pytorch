@@ -61,10 +61,6 @@ def repeat_kv(self,x:torch.Tensor,n_rep:int)->torch.Tensor:
             .reshape(batch_size,seq_len,n_kv_heads*n_rep,head_dim)
         )
     
-
-
-
-
 class RMSNorm(nn.Module):
     def __init__(self,dim:int,eps:float=1e-5):
         super().__init__()
@@ -82,9 +78,9 @@ class SelfAttention(nn.Module):
         super().__init__()
 
         # Indicates the number of heads for keys and values
-        self.n_kv_head=args.n_heads if args.n_kv_heads is None else args.n_kv_heads
+        self.n_kv_heads=args.n_heads if args.n_kv_heads is None else args.n_kv_heads
         # Indicates the number of heads for queries
-        self.n_head_q=args.n_heads
+        self.n_heads_q=args.n_heads
         # Indicates how many times the head of keys and values should be repeated to match the head of queries
         self.n_rep=self.n_heads_q//self.n_kv_heads
         # Indicate the dimensions of each head
