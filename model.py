@@ -99,13 +99,6 @@ class SelfAttention(nn.Module):
         self.cache_v=torch.zeros((args.max_batch_size,args.max_seq_len,args.n_kv_heads,args.head_dim))
 
     
-
-
-
-
-
-
-
     def forward(self,x:torch.Tensor,start_pos:int,freqs_complex:torch.Tensor):
         batch_size,seq_len,_=x.shape # (Batch,1,Dim)
         # Applying the linear transformation to the queries, keys and values
@@ -142,7 +135,26 @@ class SelfAttention(nn.Module):
         output=(output.transpose(1,2).contiguous().view(batch_size,seq_len,-1))
         return self.wo(output)
     
+class FeedForward(nn.Module):
+    def __init__(self,args:ModelArgs):
+        super().__init__()
+        hidden_dim=4*args.dim
+        hidden_dim=int(2*hidden_dim/3)
+        if args.ffn_dim_multiplier is not None:
+            hidden_dim=int(args.ffn_dim_multiplier*args.dim)
+        # Round the hidden_dim to the nearest multiple of the parameter
+        hidden=args.multiple_of*((hidden+args.multiple_of-1)//args.multiple_of)
+        self.w1=nn.linear(args.dim,hidden_dim,bias=False)
+        self.w2=nn.linear(hidden_dim,args.dim,bias=False)
+        self.w3=nn.linear(args.dim,args.dim,bias=False)
 
+    def forward(self,x:torch.Tensor):
+        swish=F.silu(self.w1(x))
+        x_V=self.w3(x)
+        x=swish*x_V
+        x=self.w2(x)
+        return x
+   
 class EncoderBlock(nn.Module):
     def __init__(self,args:ModelArgs):
         super().__init__()
@@ -162,10 +174,6 @@ class EncoderBlock(nn.Module):
     def forward(self,x:torch.Tensor,start_pos:int,freqs_complex:torch.Tensor):
       h=x+self.attention.feed_forward(self.attention_norm(x),start_pos,freqs_complex)
       out=h+self.feed_forward.forward(self.ffn_norm(h))
-
-
-   
-       
 # Complete Model Except the Softmax
 class Transformer(nn.Module):
     def __init__(self,args:ModelArgs)->None:
