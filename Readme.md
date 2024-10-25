@@ -1,8 +1,6 @@
 
 # 🦙 LLaMA 2 Implementation with PyTorch
 
-![GitHub repo size](https://img.shields.io/github/repo-size/saadsohail05/llama-2-pytorch) ![GitHub last commit](https://img.shields.io/github/last-commit/saadsohail05/llama-2-pytorch) ![GitHub license](https://img.shields.io/github/license/saadsohail05/llama-2-pytorch)  
-
 This repository contains an **Educational Implementation of LLaMA 2** using PyTorch. It is inspired by the official code by Meta, recreated from scratch to deepen the understanding of transformer-based language models like LLaMA.
 
 ---
@@ -108,7 +106,7 @@ Contributions, issues, and feature requests are welcome! Feel free to check out 
 
 ## 📧 Contact
 
-If you have any questions or feedback, feel free to reach out to me via [saadsohail5104@example.com](mailto:saadsohail5104@gmail.com).
+If you have any questions or feedback, feel free to reach out to me via [saadsohail5104@gmail.com](mailto:saadsohail5104@gmail.com).
 
 ---
 
