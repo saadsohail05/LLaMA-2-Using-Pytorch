@@ -1,4 +1,4 @@
-from typing import Optional
+from typing import Optional, List
 import torch
 import time
 from pathlib import Path
@@ -56,13 +56,76 @@ class LLaMa:
 
         return LLaMa(model, tokenizer, model_args)
 
+    # def text_completion(self, prompt: str, candidates: List[str], temperature: float = 0.6, top_p: float = 0.9, max_gen_len: Optional[int] = None):
+    #     if max_gen_len is None:
+    #         max_gen_len = self.args.max_seq_len
+    #     # Convert each prompt into tokens
+    #     prompt_tokens = [self.tokenizer.encode(prompt,out_type=int,add_bos=True,add_eos=True) for prompt in prompts]
+    #     batch_size = len(prompt_tokens)
+    #     assert batch_size <= self.args.max_batch_size, f"Batch size {batch_size} exceeds the maximum batch size {self.args.max_batch_size}"
+    #     # Make sure the prompt length is not larger than the maximum sequence length
+    #     max_prompt_len = max(len(prompt) for prompt in prompt_tokens)
+    #     total_len=min(self.args.max_seq_len,max_gen_len+max_prompt_len)
+        
+    #     # Create the list that will contain the generated tokens,along the intial tokens
+    #     pad_id=self.tokenizer.pad_id()
+    #     tokens=torch.full((batch_size,total_len),pad_id,dtype=torch.long,device=device)
+    #     for k,t in enumerate(prompt_tokens):
+    #         tokens[k,:len(t)]=torch.tensor(t,dtype=torch.long,device=device)
+    #     eos_reached=torch.Tensor([False]*batch_size).to(device)
+    #     prompt_tokens_mask=tokens!=pad_id
+    #     for cur_pos in tqdm(range(1,total_len),desc="Generating Tokens"):
+    #         with torch.no_grad():
+    #             logits=self.model.forward(tokens[:,cur_pos-1:cur_pos],cur_pos)
+    #         # Apply temperature
+    #         if temperature>0:
+    #                 probs=torch.softmax(logits[:,-1]/temperature,dim=-1)
+    #                 next_token=self._sample_top_p(probs,top_p)
+    #         else:
+    #             next_token=torch.argmax(logits[:,-1],dim=-1)
+            
+    #         next_token=next_token.reshape(-1)
+
+    #         next_token=torch.where(prompt_tokens_mask[:cur_pos],tokens[:cur_pos],tokens[:cur_pos,],next_token)
+    #         tokens[:,cur_pos]=next_token
+    #         eos_reached|=(~prompt_tokens_mask[:,cur_pos])&(next_token==self.tokenizer.eos_id())
+    #         if all(eos_reached):
+    #             break
+
+    #     out_tokens=[]
+    #     out_text=[]
+    #     for prompt_index,current_prompt_tokens in enumerate(tokens):
+    #         if self.tokenizer.eos_id() in current_prompt_tokens:
+    #             eos_idx=current_prompt_tokens.index(self.tokenizer.eos_id())
+    #             current_prompt_tokens=current_prompt_tokens[:eos_idx]
+    #         out_tokens.append(current_prompt_tokens)
+    #         out_text.append(self.tokenizer.decode(current_prompt_tokens))
+    #     return out_tokens,out_text
+                
+                 
 
 if __name__ == "__main__":
     torch.manual_seed(0)
 
     allow_cuda = False  # Set this to True if you want to allow GPU usage
     device = "cuda" if torch.cuda.is_available() and allow_cuda else "cpu"
-    
+ 
+    prompts = [
+        "Simply put, the theory of relativity states that ",
+        "If Google was an Italian company founded in Milan, it would",
+        # Few shot promt
+        """Translate English to French:
+        
+        sea otter => loutre de mer
+        peppermint => menthe poivrée
+        plush girafe => girafe peluche
+        cheese =>""",
+        # Zero shot prompt
+        """Tell me if the following person is actually Doraemon disguised as human:
+        Name: Umar Jamil
+        Decision: 
+        """
+    ]
     try:
         model = LLaMa.build(
             checkpoints_dir='llama-2-7b',  # Ensure this directory exists
@@ -70,6 +133,7 @@ if __name__ == "__main__":
             load_model=True,  # Should be boolean, not a string
             max_seq_len=1024,
             max_batch_size=3,
+            # max_batch_size=len(prompts),
             device=device
         )
         print("All Ok")
